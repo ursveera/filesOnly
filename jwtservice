@@ -41,3 +41,10 @@ namespace AffiGive_API_V1.Services
     }
 
 }
+
+"Jwt": {
+  "Issuer": "veera",
+  "Audience": "veera",
+  "Secret": "SuperLongRandomSecretKey123!@#ThatNoOneKnows",
+  "Key": "SuperLongRandomSecretKey123!@#ThatNoOneKnows"
+},
