@@ -1,50 +1,49 @@
-using AffiGive_API_V1.Models;
 using Microsoft.IdentityModel.Tokens;
+using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-namespace AffiGive_API_V1.Services
+
+public class JwtTokenService
 {
+    private readonly string _issuer;
+    private readonly string _clientId;
+    private readonly string _clientKey;
+    private readonly string _audience;
 
-
-    public class JwtService
+    public JwtTokenService(string issuer, string clientId, string clientKey, string audience)
     {
-        private readonly IConfiguration _config;
-
-        public JwtService(IConfiguration config)
-        {
-            _config = config;
-        }
-
-        public string GenerateToken(User user)
-        {
-            var claims = new[]
-            {
-            new Claim("UserId", user.Id.ToString()),
-            new Claim("GoogleId", user.GoogleId),
-            new Claim(ClaimTypes.Email, user.Email)
-        };
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddDays(7),
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
+        _issuer = issuer;
+        _clientId = clientId;
+        _clientKey = clientKey;
+        _audience = audience;
     }
 
-}
+    public string GenerateJwt()
+    {
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_clientKey));
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-"Jwt": {
-  "Issuer": "veera",
-  "Audience": "veera",
-  "Secret": "SuperLongRandomSecretKey123!@#ThatNoOneKnows",
-  "Key": "SuperLongRandomSecretKey123!@#ThatNoOneKnows"
-},
+        var now = DateTime.UtcNow;
+
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, "Straive"),
+            new Claim("client_id", _clientId),
+            new Claim(JwtRegisteredClaimNames.Iss, _issuer),
+            new Claim(JwtRegisteredClaimNames.Aud, _audience),
+            new Claim(JwtRegisteredClaimNames.Iat, 
+                new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: _issuer,
+            audience: _audience,
+            claims: claims,
+            expires: now.AddMinutes(5),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+}
